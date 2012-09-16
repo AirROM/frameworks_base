@@ -291,8 +291,8 @@ public class GlowPadView extends View {
         a.recycle();
 
         final ContentResolver resolver = context.getContentResolver();
-	boolean vibrateDisabled = Settings.System.getInt(resolver,Settings.System.LOCKSCREEN_VIBRATE_DISABLED, 1) == 1;
-	setVibrateEnabled(vibrateDisabled ? mVibrationDuration > 0 : false);
+        boolean vibrateDisabled = Settings.System.getInt(resolver,Settings.System.LOCKSCREEN_VIBRATE_DISABLED, 1) == 1;
+        setVibrateEnabled(vibrateDisabled ? mVibrationDuration > 0 : false);
 
         assignDefaultsIfNeeded();
 
