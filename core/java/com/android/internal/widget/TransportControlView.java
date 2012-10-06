@@ -115,6 +115,7 @@ public class TransportControlView extends FrameLayout implements OnClickListener
                     }
                     mMetadata.bitmap = (Bitmap) msg.obj;
                     mAlbumArt.setImageBitmap(mMetadata.bitmap);
+		    mAlbumArt.setAlpha(0.5f);
                 }
                 break;
 
