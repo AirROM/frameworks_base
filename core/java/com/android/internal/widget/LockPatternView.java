@@ -103,6 +103,8 @@ public class LockPatternView extends View {
     private boolean mEnableHapticFeedback = true;
     private boolean mPatternInProgress = false;
 
+    private boolean mVisibleDots = true;
+
     private float mDiameterFactor = 0.10f; // TODO: move to attrs
     private final int mStrokeAlpha = 128;
     private float mHitFactor = 0.6f;
@@ -338,6 +340,15 @@ public class LockPatternView extends View {
      */
     public void setInStealthMode(boolean inStealthMode) {
         mInStealthMode = inStealthMode;
+    }
+
+
+    public void setVisibleDots(boolean visibleDots) {
+	mVisibleDots = visibleDots;
+    }
+
+    public boolean isVisibleDots() {
+	return mVisibleDots;
     }
 
     /**
@@ -1082,6 +1093,9 @@ public class LockPatternView extends View {
         Bitmap innerCircle;
 
         if (!partOfPattern || (mInStealthMode)) {
+		if (!mVisibleDots) {
+			return;
+		}
             // unselected circle
             outerCircle = mBitmapCircleDefault;
             innerCircle = mBitmapBtnDefault;
@@ -1141,7 +1155,7 @@ public class LockPatternView extends View {
         return new SavedState(superState,
                 LockPatternUtils.patternToString(mPattern),
                 mPatternDisplayMode.ordinal(),
-                mInputEnabled, mInStealthMode, mEnableHapticFeedback);
+                mInputEnabled, mInStealthMode, mEnableHapticFeedback, mVisibleDots);
     }
 
     @Override
@@ -1155,6 +1169,7 @@ public class LockPatternView extends View {
         mInputEnabled = ss.isInputEnabled();
         mInStealthMode = ss.isInStealthMode();
         mEnableHapticFeedback = ss.isTactileFeedbackEnabled();
+	mVisibleDots = ss.isVisibleDots();
     }
 
     /**
@@ -1167,18 +1182,20 @@ public class LockPatternView extends View {
         private final boolean mInputEnabled;
         private final boolean mInStealthMode;
         private final boolean mTactileFeedbackEnabled;
+	private final boolean mVisibleDots;
 
         /**
          * Constructor called from {@link LockPatternView#onSaveInstanceState()}
          */
         private SavedState(Parcelable superState, String serializedPattern, int displayMode,
-                boolean inputEnabled, boolean inStealthMode, boolean tactileFeedbackEnabled) {
+                boolean inputEnabled, boolean inStealthMode, boolean tactileFeedbackEnabled, boolean visibleDots) {
             super(superState);
             mSerializedPattern = serializedPattern;
             mDisplayMode = displayMode;
             mInputEnabled = inputEnabled;
             mInStealthMode = inStealthMode;
             mTactileFeedbackEnabled = tactileFeedbackEnabled;
+	    mVisibleDots = visibleDots;
         }
 
         /**
@@ -1191,6 +1208,7 @@ public class LockPatternView extends View {
             mInputEnabled = (Boolean) in.readValue(null);
             mInStealthMode = (Boolean) in.readValue(null);
             mTactileFeedbackEnabled = (Boolean) in.readValue(null);
+	    mVisibleDots = (Boolean) in.readValue(null);
         }
 
         public String getSerializedPattern() {
@@ -1213,6 +1231,10 @@ public class LockPatternView extends View {
             return mTactileFeedbackEnabled;
         }
 
+	public boolean isVisibleDots() {
+	    return mVisibleDots;
+	}
+
         @Override
         public void writeToParcel(Parcel dest, int flags) {
             super.writeToParcel(dest, flags);
@@ -1221,6 +1243,7 @@ public class LockPatternView extends View {
             dest.writeValue(mInputEnabled);
             dest.writeValue(mInStealthMode);
             dest.writeValue(mTactileFeedbackEnabled);
+	    dest.writeValue(mVisibleDots);
         }
 
         public static final Parcelable.Creator<SavedState> CREATOR =

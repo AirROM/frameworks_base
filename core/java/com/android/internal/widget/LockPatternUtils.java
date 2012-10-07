@@ -911,6 +911,14 @@ public class LockPatternUtils {
         setBoolean(Settings.Secure.LOCK_PATTERN_TACTILE_FEEDBACK_ENABLED, enabled);
     }
 
+    public void setVisibleDotsEnabled(boolean enabled) {
+	setBoolean(Settings.Secure.LOCK_DOTS_VISIBLE, enabled);
+    }
+
+    public boolean isVisibleDotsEnabled() {
+	return getBoolean(Settings.Secure.LOCK_DOTS_VISIBLE, true);
+    }
+
     /**
      * @return the pattern lockscreen size
      */
