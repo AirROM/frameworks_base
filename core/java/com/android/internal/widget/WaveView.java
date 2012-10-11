@@ -43,6 +43,7 @@ import com.android.internal.R;
 public class WaveView extends View implements ValueAnimator.AnimatorUpdateListener {
     private static final String TAG = "WaveView";
     private static final boolean DBG = false;
+    private static final int WAVE_COUNT = 20; // default wave count
     private static final long VIBRATE_SHORT = 20;  // msec
     private static final long VIBRATE_LONG = 20;  // msec
 
@@ -56,17 +57,21 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
 
     // Animation properties.
     private static final long DURATION = 300; // duration of transitional animations
-    private static final long FINAL_DURATION = 500; // duration of final animations when unlocking
+    private static final long FINAL_DURATION = 200; // duration of final animations when unlocking
     private static final long RING_DELAY = 1300; // when to start fading animated rings
     private static final long FINAL_DELAY = 200; // delay for unlock success animation
     private static final long SHORT_DELAY = 100; // for starting one animation after another.
-    private static final long RESET_TIMEOUT = 500; // elapsed time of inactivity before we reset
+    private static final long WAVE_DURATION = 2000; // amount of time for way to expand/decay
+    private static final long RESET_TIMEOUT = 3000; // elapsed time of inactivity before we reset
+    private static final long DELAY_INCREMENT = 15; // increment per wave while tracking motion
+    private static final long DELAY_INCREMENT2 = 12; // increment per wave while not tracking
+    private static final long WAVE_DELAY = WAVE_DURATION / WAVE_COUNT; // initial propagation delay
 
     /**
      * The scale by which to multiply the unlock handle width to compute the radius
      * in which it can be grabbed when accessibility is disabled.
      */
-    private static final float GRAB_HANDLE_RADIUS_SCALE_ACCESSIBILITY_DISABLED = 0.1f;
+    private static final float GRAB_HANDLE_RADIUS_SCALE_ACCESSIBILITY_DISABLED = 0.5f;
 
     /**
      * The scale by which to multiply the unlock handle width to compute the radius
@@ -76,10 +81,14 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
 
     private Vibrator mVibrator;
     private OnTriggerListener mOnTriggerListener;
-    private ArrayList<DrawableHolder> mDrawables = new ArrayList<DrawableHolder>(4);
+    private ArrayList<DrawableHolder> mDrawables = new ArrayList<DrawableHolder>(3);
+    private ArrayList<DrawableHolder> mLightWaves = new ArrayList<DrawableHolder>(WAVE_COUNT);
     private boolean mFingerDown = false;
-    private float mRingRadius = 570.0f; // Radius of bitmap ring. Used to snap halo to it
-    private int mSnapRadius = 280; // minimum threshold for drag unlock
+    private float mRingRadius = 182.0f; // Radius of bitmap ring. Used to snap halo to it
+    private int mSnapRadius = 136; // minimum threshold for drag unlock
+    private int mWaveCount = WAVE_COUNT;  // number of waves
+    private long mWaveTimerDelay = WAVE_DELAY;
+    private int mCurrentWave = 0;
     private float mLockCenterX; // center of widget as dictated by widget size
     private float mLockCenterY;
     private float mMouseX; // current mouse position as of last touch event
@@ -87,9 +96,10 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
     private DrawableHolder mUnlockRing;
     private DrawableHolder mUnlockDefault;
     private DrawableHolder mUnlockHalo;
-    private DrawableHolder mUnlockWave;
     private int mLockState = STATE_RESET_LOCK;
     private int mGrabbedState = OnTriggerListener.NO_HANDLE;
+    private boolean mWavesRunning;
+    private boolean mFinishWaves;
 
     public WaveView(Context context) {
         this(context, null);
@@ -164,9 +174,9 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
         mUnlockDefault = new DrawableHolder(createDrawable(R.drawable.unlock_default));
         mUnlockDefault.setX(mLockCenterX);
         mUnlockDefault.setY(mLockCenterY);
-        mUnlockDefault.setScaleX(1.0f);
-        mUnlockDefault.setScaleY(1.0f);
-        mUnlockDefault.setAlpha(1.0f);
+        mUnlockDefault.setScaleX(0.1f);
+        mUnlockDefault.setScaleY(0.1f);
+        mUnlockDefault.setAlpha(0.0f);
         mDrawables.add(mUnlockDefault);
 
         mUnlockHalo = new DrawableHolder(createDrawable(R.drawable.unlock_halo));
@@ -177,13 +187,12 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
         mUnlockHalo.setAlpha(0.0f);
         mDrawables.add(mUnlockHalo);
 
-	mUnlockWave = new DrawableHolder(createDrawable(R.drawable.unlock_wave));
-	mUnlockWave.setX(mLockCenterX);
-	mUnlockWave.setY(mLockCenterY);
-	mUnlockWave.setScaleX(0.1f);
-	mUnlockWave.setScaleY(0.1f);
-	mUnlockWave.setAlpha(0.0f);
-	mDrawables.add(mUnlockWave);
+        BitmapDrawable wave = createDrawable(R.drawable.unlock_wave);
+        for (int i = 0; i < mWaveCount; i++) {
+            DrawableHolder holder = new DrawableHolder(wave);
+            mLightWaves.add(holder);
+            holder.setAlpha(0.0f);
+        }
     }
 
     private void waveUpdateFrame(float mouseX, float mouseY, boolean fingerDown) {
@@ -193,21 +202,18 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
         double touchA = Math.atan2(distX, distY);
         float ringX = (float) (mLockCenterX + mRingRadius * Math.sin(touchA));
         float ringY = (float) (mLockCenterY + mRingRadius * Math.cos(touchA));
-        float handlescale = dragDistance * 3.0f / mRingRadius;
-        float wavescale = dragDistance * 1.5f / mRingRadius;
-        if (handlescale <= 0.7f) {
-            handlescale = 0.7f;
-            }
-        if (wavescale <= 0.5f) {
-            wavescale = 0.5f;
-            }
-        if (wavescale >= 1.0f) {
-            wavescale = 1.0f;
-            }
 
         switch (mLockState) {
             case STATE_RESET_LOCK:
                 if (DBG) Log.v(TAG, "State RESET_LOCK");
+                mWaveTimerDelay = WAVE_DELAY;
+                for (int i = 0; i < mLightWaves.size(); i++) {
+                    DrawableHolder holder = mLightWaves.get(i);
+                    holder.addAnimTo(300, 0, "alpha", 0.0f, false);
+                }
+                for (int i = 0; i < mLightWaves.size(); i++) {
+                    mLightWaves.get(i).startAnimations(this);
+                }
 
                 mUnlockRing.addAnimTo(DURATION, 0, "x", mLockCenterX, true);
                 mUnlockRing.addAnimTo(DURATION, 0, "y", mLockCenterY, true);
@@ -215,11 +221,19 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
                 mUnlockRing.addAnimTo(DURATION, 0, "scaleY", 0.1f, true);
                 mUnlockRing.addAnimTo(DURATION, 0, "alpha", 0.0f, true);
 
+                mUnlockDefault.removeAnimationFor("x");
+                mUnlockDefault.removeAnimationFor("y");
+                mUnlockDefault.removeAnimationFor("scaleX");
+                mUnlockDefault.removeAnimationFor("scaleY");
+                mUnlockDefault.removeAnimationFor("alpha");
                 mUnlockDefault.setX(mLockCenterX);
                 mUnlockDefault.setY(mLockCenterY);
-                mUnlockDefault.setScaleX(1.0f);
-                mUnlockDefault.setScaleY(1.0f);
-                mUnlockDefault.setAlpha(1.0f);
+                mUnlockDefault.setScaleX(0.1f);
+                mUnlockDefault.setScaleY(0.1f);
+                mUnlockDefault.setAlpha(0.0f);
+                mUnlockDefault.addAnimTo(DURATION, SHORT_DELAY, "scaleX", 1.0f, true);
+                mUnlockDefault.addAnimTo(DURATION, SHORT_DELAY, "scaleY", 1.0f, true);
+                mUnlockDefault.addAnimTo(DURATION, SHORT_DELAY, "alpha", 1.0f, true);
 
                 mUnlockHalo.removeAnimationFor("x");
                 mUnlockHalo.removeAnimationFor("y");
@@ -228,20 +242,14 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
                 mUnlockHalo.removeAnimationFor("alpha");
                 mUnlockHalo.setX(mLockCenterX);
                 mUnlockHalo.setY(mLockCenterY);
-                mUnlockHalo.setScaleX(0.7f);
-                mUnlockHalo.setScaleY(0.7f);
+                mUnlockHalo.setScaleX(0.1f);
+                mUnlockHalo.setScaleY(0.1f);
                 mUnlockHalo.setAlpha(0.0f);
-
-                mUnlockWave.removeAnimationFor("x");
-                mUnlockWave.removeAnimationFor("y");
-                mUnlockWave.removeAnimationFor("scaleX");
-                mUnlockWave.removeAnimationFor("scaleY");
-                mUnlockWave.removeAnimationFor("alpha");
-                mUnlockWave.setX(mLockCenterX);
-                mUnlockWave.setY(mLockCenterY);
-                mUnlockWave.setScaleX(0.5f);
-                mUnlockWave.setScaleY(0.5f);
-                mUnlockWave.setAlpha(0.0f);
+                mUnlockHalo.addAnimTo(DURATION, SHORT_DELAY, "x", mLockCenterX, true);
+                mUnlockHalo.addAnimTo(DURATION, SHORT_DELAY, "y", mLockCenterY, true);
+                mUnlockHalo.addAnimTo(DURATION, SHORT_DELAY, "scaleX", 1.0f, true);
+                mUnlockHalo.addAnimTo(DURATION, SHORT_DELAY, "scaleY", 1.0f, true);
+                mUnlockHalo.addAnimTo(DURATION, SHORT_DELAY, "alpha", 1.0f, true);
 
                 removeCallbacks(mLockTimerActions);
 
@@ -250,6 +258,7 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
 
             case STATE_READY:
                 if (DBG) Log.v(TAG, "State READY");
+                mWaveTimerDelay = WAVE_DELAY;
                 break;
 
             case STATE_START_ATTEMPT:
@@ -259,13 +268,15 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
                 mUnlockDefault.removeAnimationFor("scaleX");
                 mUnlockDefault.removeAnimationFor("scaleY");
                 mUnlockDefault.removeAnimationFor("alpha");
-                mUnlockDefault.setX(mLockCenterX);
+                mUnlockDefault.setX(mLockCenterX + 182);
                 mUnlockDefault.setY(mLockCenterY);
-                mUnlockDefault.setScaleX(1.0f);
-                mUnlockDefault.setScaleY(1.0f);
+                mUnlockDefault.setScaleX(0.1f);
+                mUnlockDefault.setScaleY(0.1f);
                 mUnlockDefault.setAlpha(0.0f);
-                mUnlockHalo.setAlpha(1.0f);
-                mUnlockWave.setAlpha(1.0f);
+
+                mUnlockDefault.addAnimTo(DURATION, SHORT_DELAY, "scaleX", 1.0f, false);
+                mUnlockDefault.addAnimTo(DURATION, SHORT_DELAY, "scaleY", 1.0f, false);
+                mUnlockDefault.addAnimTo(DURATION, SHORT_DELAY, "alpha", 1.0f, false);
 
                 mUnlockRing.addAnimTo(DURATION, 0, "scaleX", 1.0f, true);
                 mUnlockRing.addAnimTo(DURATION, 0, "scaleY", 1.0f, true);
@@ -277,45 +288,84 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
             case STATE_ATTEMPTING:
                 if (DBG) Log.v(TAG, "State ATTEMPTING (fingerDown = " + fingerDown + ")");
                 if (dragDistance > mSnapRadius) {
+                    mFinishWaves = true; // don't start any more waves.
                     if (fingerDown) {
-                        mUnlockHalo.setX(mLockCenterX);
-                        mUnlockHalo.setY(mLockCenterY);
-                        mUnlockHalo.setScaleX(1.5f);
-                        mUnlockHalo.setScaleY(1.5f);
-                        mUnlockHalo.setAlpha(1.0f);
-                        mUnlockWave.setX(mLockCenterX);
-                        mUnlockWave.setY(mLockCenterY);
-                        mUnlockWave.setScaleX(wavescale);
-                        mUnlockWave.setScaleY(wavescale);
-                        mUnlockWave.setAlpha(1.0f);
+                        mUnlockHalo.addAnimTo(0, 0, "x", ringX, true);
+                        mUnlockHalo.addAnimTo(0, 0, "y", ringY, true);
+                        mUnlockHalo.addAnimTo(0, 0, "scaleX", 1.0f, true);
+                        mUnlockHalo.addAnimTo(0, 0, "scaleY", 1.0f, true);
+                        mUnlockHalo.addAnimTo(0, 0, "alpha", 1.0f, true);
                     }  else {
                         if (DBG) Log.v(TAG, "up detected, moving to STATE_UNLOCK_ATTEMPT");
                         mLockState = STATE_UNLOCK_ATTEMPT;
                     }
                 } else {
-                        mUnlockHalo.setX(mLockCenterX);
-                        mUnlockHalo.setY(mLockCenterY);
-                        mUnlockHalo.setScaleX(handlescale);
-                        mUnlockHalo.setScaleY(handlescale);
-                        mUnlockHalo.setAlpha(1.0f);
-                        mUnlockWave.setX(mLockCenterX);
-                        mUnlockWave.setY(mLockCenterY);
-                        mUnlockWave.setScaleX(wavescale);
-                        mUnlockWave.setScaleY(wavescale);
-                        mUnlockWave.setAlpha(1.0f);
+                    // If waves have stopped, we need to kick them off again...
+                    if (!mWavesRunning) {
+                        mWavesRunning = true;
+                        mFinishWaves = false;
+                        // mWaveTimerDelay = WAVE_DELAY;
+                        postDelayed(mAddWaveAction, mWaveTimerDelay);
+                    }
+                    mUnlockHalo.addAnimTo(0, 0, "x", mouseX, true);
+                    mUnlockHalo.addAnimTo(0, 0, "y", mouseY, true);
+                    mUnlockHalo.addAnimTo(0, 0, "scaleX", 1.0f, true);
+                    mUnlockHalo.addAnimTo(0, 0, "scaleY", 1.0f, true);
+                    mUnlockHalo.addAnimTo(0, 0, "alpha", 1.0f, true);
                 }
                 break;
 
             case STATE_UNLOCK_ATTEMPT:
                 if (DBG) Log.v(TAG, "State UNLOCK_ATTEMPT");
                 if (dragDistance > mSnapRadius) {
-                    mUnlockRing.setAlpha(0.0f);
+                    for (int n = 0; n < mLightWaves.size(); n++) {
+                        DrawableHolder wave = mLightWaves.get(n);
+                        long delay = 1000L*(6 + n - mCurrentWave)/10L;
+                        wave.addAnimTo(FINAL_DURATION, delay, "x", ringX, true);
+                        wave.addAnimTo(FINAL_DURATION, delay, "y", ringY, true);
+                        wave.addAnimTo(FINAL_DURATION, delay, "scaleX", 0.1f, true);
+                        wave.addAnimTo(FINAL_DURATION, delay, "scaleY", 0.1f, true);
+                        wave.addAnimTo(FINAL_DURATION, delay, "alpha", 0.0f, true);
+                    }
+                    for (int i = 0; i < mLightWaves.size(); i++) {
+                        mLightWaves.get(i).startAnimations(this);
+                    }
 
-                    mUnlockHalo.addAnimTo(FINAL_DURATION, 0, "scaleX", 4.1f, false);
-                    mUnlockHalo.addAnimTo(FINAL_DURATION, 0, "scaleY", 4.1f, false);
+                    mUnlockRing.addAnimTo(FINAL_DURATION, 0, "x", ringX, false);
+                    mUnlockRing.addAnimTo(FINAL_DURATION, 0, "y", ringY, false);
+                    mUnlockRing.addAnimTo(FINAL_DURATION, 0, "scaleX", 0.1f, false);
+                    mUnlockRing.addAnimTo(FINAL_DURATION, 0, "scaleY", 0.1f, false);
+                    mUnlockRing.addAnimTo(FINAL_DURATION, 0, "alpha", 0.0f, false);
 
-                    mUnlockWave.addAnimTo(FINAL_DURATION, 0, "scaleX", 2.0f, false);
-                    mUnlockWave.addAnimTo(FINAL_DURATION, 0, "scaleY", 2.0f, false);
+                    mUnlockRing.addAnimTo(FINAL_DURATION, FINAL_DELAY, "alpha", 0.0f, false);
+
+                    mUnlockDefault.removeAnimationFor("x");
+                    mUnlockDefault.removeAnimationFor("y");
+                    mUnlockDefault.removeAnimationFor("scaleX");
+                    mUnlockDefault.removeAnimationFor("scaleY");
+                    mUnlockDefault.removeAnimationFor("alpha");
+                    mUnlockDefault.setX(ringX);
+                    mUnlockDefault.setY(ringY);
+                    mUnlockDefault.setScaleX(0.1f);
+                    mUnlockDefault.setScaleY(0.1f);
+                    mUnlockDefault.setAlpha(0.0f);
+
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, 0, "x", ringX, true);
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, 0, "y", ringY, true);
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, 0, "scaleX", 1.0f, true);
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, 0, "scaleY", 1.0f, true);
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, 0, "alpha", 1.0f, true);
+
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, FINAL_DELAY, "scaleX", 3.0f, false);
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, FINAL_DELAY, "scaleY", 3.0f, false);
+                    mUnlockDefault.addAnimTo(FINAL_DURATION, FINAL_DELAY, "alpha", 0.0f, false);
+
+                    mUnlockHalo.addAnimTo(FINAL_DURATION, 0, "x", ringX, false);
+                    mUnlockHalo.addAnimTo(FINAL_DURATION, 0, "y", ringY, false);
+
+                    mUnlockHalo.addAnimTo(FINAL_DURATION, FINAL_DELAY, "scaleX", 3.0f, false);
+                    mUnlockHalo.addAnimTo(FINAL_DURATION, FINAL_DELAY, "scaleY", 3.0f, false);
+                    mUnlockHalo.addAnimTo(FINAL_DURATION, FINAL_DELAY, "alpha", 0.0f, false);
 
                     removeCallbacks(mLockTimerActions);
 
@@ -330,6 +380,7 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
 
             case STATE_UNLOCK_SUCCESS:
                 if (DBG) Log.v(TAG, "State UNLOCK_SUCCESS");
+                removeCallbacks(mAddWaveAction);
                 break;
 
             default:
@@ -339,7 +390,6 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
         mUnlockDefault.startAnimations(this);
         mUnlockHalo.startAnimations(this);
         mUnlockRing.startAnimations(this);
-	mUnlockWave.startAnimations(this);
     }
 
     BitmapDrawable createDrawable(int resId) {
@@ -354,6 +404,9 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
         for (int i = 0; i < mDrawables.size(); ++i) {
             mDrawables.get(i).draw(canvas);
         }
+        for (int i = 0; i < mLightWaves.size(); ++i) {
+            mLightWaves.get(i).draw(canvas);
+        }
     }
 
     private final Runnable mLockTimerActions = new Runnable() {
@@ -364,7 +417,51 @@ public class WaveView extends View implements ValueAnimator.AnimatorUpdateListen
                 if (DBG) Log.v(TAG, "Timer resets to STATE_RESET_LOCK");
                 mLockState = STATE_RESET_LOCK;
             }
+            // for prototype, reset after successful unlock
+            if (mLockState == STATE_UNLOCK_SUCCESS) {
+                if (DBG) Log.v(TAG, "Timer resets to STATE_RESET_LOCK after success");
+                mLockState = STATE_RESET_LOCK;
+            }
             invalidate();
+        }
+    };
+
+    private final Runnable mAddWaveAction = new Runnable() {
+        public void run() {
+            double distX = mMouseX - mLockCenterX;
+            double distY = mMouseY - mLockCenterY;
+            int dragDistance = (int) Math.ceil(Math.hypot(distX, distY));
+            if (mLockState == STATE_ATTEMPTING && dragDistance < mSnapRadius
+                    && mWaveTimerDelay >= WAVE_DELAY) {
+                mWaveTimerDelay = Math.min(WAVE_DURATION, mWaveTimerDelay + DELAY_INCREMENT);
+
+                DrawableHolder wave = mLightWaves.get(mCurrentWave);
+                wave.setAlpha(0.0f);
+                wave.setScaleX(0.2f);
+                wave.setScaleY(0.2f);
+                wave.setX(mMouseX);
+                wave.setY(mMouseY);
+
+                wave.addAnimTo(WAVE_DURATION, 0, "x", mLockCenterX, true);
+                wave.addAnimTo(WAVE_DURATION, 0, "y", mLockCenterY, true);
+                wave.addAnimTo(WAVE_DURATION*2/3, 0, "alpha", 1.0f, true);
+                wave.addAnimTo(WAVE_DURATION, 0, "scaleX", 1.0f, true);
+                wave.addAnimTo(WAVE_DURATION, 0, "scaleY", 1.0f, true);
+
+                wave.addAnimTo(1000, RING_DELAY, "alpha", 0.0f, false);
+                wave.startAnimations(WaveView.this);
+
+                mCurrentWave = (mCurrentWave+1) % mWaveCount;
+                if (DBG) Log.v(TAG, "WaveTimerDelay: start new wave in " + mWaveTimerDelay);
+            } else {
+                mWaveTimerDelay += DELAY_INCREMENT2;
+            }
+            if (mFinishWaves) {
+                // sentinel used to restart the waves after they've stopped
+                mWavesRunning = false;
+            } else {
+                postDelayed(mAddWaveAction, mWaveTimerDelay);
+            }
         }
     };
 
