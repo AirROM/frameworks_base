@@ -1641,6 +1641,12 @@ public final class Settings {
         public static final String MODE_TABLET_UI = "mode_tabletui";
 
         /**
+         * If checked hide extra system bar stuff
+         * ie compatmode button and extra ime switcher.
+         */
+        public static final String HIDE_EXTRAS_SYSTEM_BAR = "hide_extras_system_bar";
+
+        /**
          * User interface mode. This is used to change from singlepane mode forcing it to
          * Change into multipane mode. Default is disabled. 
          */
@@ -2856,6 +2862,14 @@ public final class Settings {
          * 2 - Normal Day
          */
         public static final String STATUSBAR_CLOCK_WEEKDAY = "statusbar_clock_weekday";
+
+        /**
+         * @hide
+         * Vibrate when expanding notifications
+         * 0 - no vibrate
+         * 1 - vibrate
+         */
+        public static final String VIBRATE_NOTIF_EXPAND = "vibrate_notif_expand";
 
 
         /**
