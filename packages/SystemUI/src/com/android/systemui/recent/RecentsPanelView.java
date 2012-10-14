@@ -93,6 +93,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     boolean mHideRecentsAfterThumbnailScaleUpStarted;
 
     private Button mRecentsKillAllButton;
+    private Button mRecentsAppButton;
 
     private RecentTasksLoader mRecentTasksLoader;
     private ArrayList<TaskDescription> mRecentTaskDescriptions;
@@ -517,6 +518,23 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
             }
         }
 
+	boolean recents_application_button = Settings.System.getInt(mContext.getContentResolver(),
+                      Settings.System.RECENT_APPLICATION_BUTTON, 0) == 1;
+
+        mRecentsAppButton = (Button) findViewById(R.id.recents_application_button);
+        if (mRecentsApplButton != null){
+            if (recents_application_button){ //set the listener
+                mRecentsAppButton.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        	AppButton();
+                    }
+                });
+            } else { // hide the button completely (gone)
+                mRecentsAppButton.setVisibility(View.GONE);
+            }
+        }
+
         mPreloadTasksRunnable = new Runnable() {
             public void run() {
                 // If we set our visibility to INVISIBLE here, we avoid an extra call to
@@ -926,6 +944,13 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
             }
             mRecentTaskDescriptions.clear();
         }
+        hide(false);
+    }
+
+    private void AppButton(){
+       Intent appintent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        appintent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(appintent);
         hide(false);
     }
 }

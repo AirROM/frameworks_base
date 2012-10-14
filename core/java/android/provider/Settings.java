@@ -2162,6 +2162,18 @@ public final class Settings {
          */
         public static final String LOCKSCREEN_DISABLED = "lockscreen.disabled";
 
+	 /**
+           * .
+         * @hide
+         */
+        public static final String RECENTS_CMD_BUTTONS = "recents_cmd_buttons";
+
+	/**
+           * .
+         * @hide
+         */
+        public static final String RECENTS_APPLICATION_BUTTONS = "recents_application_button";
+
         /**
          * Whether to enable lockscreen rotation
          * @hide
