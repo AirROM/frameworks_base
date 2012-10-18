@@ -96,6 +96,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     boolean mHideRecentsAfterThumbnailScaleUpStarted;
 
     private Button mRecentsKillAllButton;
+    private Button mRecentsAppButton;
     private LinearColorBar mRamUsageBar;
 
     private RecentTasksLoader mRecentTasksLoader;
@@ -532,6 +533,16 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                 });
         }
 
+	mRecentsAppButton = (Button) findViewById(R.id.recents_app_button);
+        if (mRecentsAppButton != null){
+                mRecentsAppButton.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AppRecentApps();
+                    }
+                });
+        }
+
         mPreloadTasksRunnable = new Runnable() {
             public void run() {
                 // If we set our visibility to INVISIBLE here, we avoid an extra call to
@@ -949,6 +960,13 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         hide(false);
     }
 
+    private void AppRecentApps(){
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(intent);
+        hide(false);
+    }
+
     private void UpdateRamBar(){
         mAm = (ActivityManager)getContext().getSystemService(Context.ACTIVITY_SERVICE);
         mState = RunningState.getInstance(getContext());
@@ -960,6 +978,15 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                 mRecentsKillAllButton.setVisibility(View.VISIBLE);
         } else { // hide the button completely (gone)
                 mRecentsKillAllButton.setVisibility(View.GONE);
+        }
+
+	boolean recent_app_button = Settings.System.getBoolean(mContext.getContentResolver(),
+                      Settings.System.RECENT_KILL_ALL_BUTTON, false);
+
+        if (recent_app_button){
+                mRecentsAppButton.setVisibility(View.VISIBLE);
+        } else { // hide the button completely (gone)
+                mRecentsAppButton.setVisibility(View.GONE);
         }
 
         boolean mRamBar = Settings.System.getBoolean(mContext.getContentResolver(),
