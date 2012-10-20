@@ -960,6 +960,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         hide(false);
     }
 
+
     private void AppRecentApps(){
         Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -979,6 +980,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         } else { // hide the button completely (gone)
                 mRecentsKillAllButton.setVisibility(View.GONE);
         }
+
 
 	boolean recent_app_button = Settings.System.getBoolean(mContext.getContentResolver(),
                       Settings.System.RECENT_KILL_ALL_BUTTON, false);
