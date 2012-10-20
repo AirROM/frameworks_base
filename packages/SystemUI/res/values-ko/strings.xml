@@ -145,4 +145,9 @@
     <string name="accessibility_rotation_lock_off" msgid="4062780228931590069">"화면이 자동으로 회전됩니다."</string>
     <string name="accessibility_rotation_lock_on_landscape" msgid="6731197337665366273">"화면이 가로 방향으로 잠겨 있습니다."</string>
     <string name="accessibility_rotation_lock_on_portrait" msgid="5809367521644012115">"화면이 세로 방향으로 잠겨 있습니다."</string>
+
+    <string name="recents_kill_all_button_text">모두 종료</string>
+    <string name="app_killed_message">앱을 종료했습니다.</string>
+
+    <string name="recents_app_button_text">애플리케이션</string>
 </resources>
