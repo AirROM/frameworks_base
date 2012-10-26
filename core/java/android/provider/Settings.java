@@ -2689,6 +2689,18 @@ public final class Settings {
          */
         public static final String NAVIGATION_BAR_WIDTH = "navigation_bar_width";
 
+        /**
+         *
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_WIDTH_PORT = "navigation_bar_width_port";
+
+        /**
+         *
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_WIDTH_LAND = "navigation_bar_width_land";
+
          /**
          * @hide
          */
@@ -3001,12 +3013,6 @@ public final class Settings {
          * @hide
          */
         public static final String LOCKSCREEN_STOCK_MUSIC_LAYOUT = "lockscreen_stock_music_layout";
-
-        /**
-         * Whether to use lockscreen theming
-         * @hide
-         */
-        public static final String USE_LOCKSCREEN_THEMES = "use_lockscreen_themes";
 
         /**
          * How to show weather on the statusbar
