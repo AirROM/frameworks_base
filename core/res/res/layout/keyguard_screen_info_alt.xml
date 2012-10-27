@@ -16,7 +16,11 @@
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:ellipsize="none"
+<<<<<<< HEAD
             android:textSize="@dimen/keyguard_lockscreen_clock_font_size"
+=======
+            android:textSize="90sp"
+>>>>>>> e00e056... Lockscreen: Port evilisto 4x lockscreen to AOKP - WIP
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:layout_marginBottom="6dip"
             android:textColor="@color/lockscreen_clock_background"
@@ -27,7 +31,11 @@
             android:layout_height="wrap_content"
             android:singleLine="true"
             android:ellipsize="none"
+<<<<<<< HEAD
             android:textSize="@dimen/keyguard_lockscreen_clock_font_size"
+=======
+            android:textSize="90sp"
+>>>>>>> e00e056... Lockscreen: Port evilisto 4x lockscreen to AOKP - WIP
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:layout_marginBottom="6dip"
             android:textColor="@color/lockscreen_clock_foreground"
