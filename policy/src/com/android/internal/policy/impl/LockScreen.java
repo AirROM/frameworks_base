@@ -783,28 +783,20 @@ class LockScreen extends LinearLayout implements KeyguardScreen {
             case LAYOUT_QUAD:
             case LAYOUT_HEPTA:
                 if (landscape)
-                    inflater.inflate(mAltLock ?
-                            R.layout.keyguard_screen_tab_unlock_alt_land :
-                            R.layout.keyguard_screen_tab_unlock_land,
-                            this, true);
+                    inflater.inflate(R.layout.keyguard_screen_tab_unlock_land, this,
+                            true);
                 else
-                    inflater.inflate(mAltLock ?
-                            R.layout.keyguard_screen_tab_unlock_alt :
-                            R.layout.keyguard_screen_tab_unlock,
-                            this, true);
+                    inflater.inflate(unlockLayout, this,
+                            true);
                 break;
             case LAYOUT_HEXA:
             case LAYOUT_OCTO:
                 if (landscape)
-                    inflater.inflate(mAltLock ?
-                            R.layout.keyguard_screen_tab_unlock_alt_land :
-                            R.layout.keyguard_screen_tab_octounlock_land,
-                            this, true);
+                    inflater.inflate(R.layout.keyguard_screen_tab_octounlock_land, this,
+                            true);
                 else
-                    inflater.inflate(mAltLock ?
-                            R.layout.keyguard_screen_tab_unlock_alt :
-                            R.layout.keyguard_screen_tab_octounlock,
-                            this, true);
+                    inflater.inflate(R.layout.keyguard_screen_tab_octounlock, this,
+                            true);
                 break;
             }
 

@@ -47,7 +47,6 @@
 
         <Space android:layout_gravity="fill" />
 
-<<<<<<< HEAD
         <TextView
             android:id="@+id/carrier"
             android:layout_width="match_parent"
@@ -61,8 +60,6 @@
             android:textColor="?android:attr/textColorSecondary" />
 
 
-=======
->>>>>>> e00e056... Lockscreen: Port evilisto 4x lockscreen to AOKP - WIP
         <!-- emergency call button shown when sim is PUKd and tab_selector is hidden -->
 
         <Button
@@ -113,20 +110,4 @@
             layout="@layout/keyguard_transport_control_alt" />
     </GridLayout>
 
-<<<<<<< HEAD
-=======
-    <TextView
-        android:id="@+id/carrier"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="20dip"
-        android:gravity="center_horizontal"
-        android:singleLine="true"
-        android:ellipsize="marquee"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:textSize="@dimen/keyguard_lockscreen_status_line_font_size"
-        android:textColor="?android:attr/textColorSecondary" />
-
->>>>>>> e00e056... Lockscreen: Port evilisto 4x lockscreen to AOKP - WIP
 </RelativeLayout>
